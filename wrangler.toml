@@ -1,0 +1,8 @@
+name = "anycut-web"
+compatibility_date = "2026-08-01"
+pages_build_output_dir = "dist"
+
+# Cloudflare Pages (static SPA)
+# Build command: npm run build
+# Output directory: dist
+# Custom domain: anycut.muhammadwaqaskhan.com
