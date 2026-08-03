@@ -9,7 +9,7 @@ import { downloadText, exportCutListCsv } from '../export/io'
 export function ProjectDetail() {
   const { id = '' } = useParams()
   const navigate = useNavigate()
-  const data = useSyncExternalStore(store.subscribe, store.getSnapshot)
+  const data = useSyncExternalStore(store.subscribe, store.getSnapshot, store.getServerSnapshot)
   const project = data.projects.find((p) => p.id === id)
   const items = useMemo(
     () => data.cutItems.filter((c) => c.projectId === id),

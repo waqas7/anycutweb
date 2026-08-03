@@ -7,7 +7,7 @@ import { downloadText, exportLayoutCsv, exportLayoutPdf } from '../export/io'
 
 export function OptimizePage() {
   const { id = '' } = useParams()
-  const data = useSyncExternalStore(store.subscribe, store.getSnapshot)
+  const data = useSyncExternalStore(store.subscribe, store.getSnapshot, store.getServerSnapshot)
   const project = data.projects.find((p) => p.id === id)
   const items = useMemo(
     () => data.cutItems.filter((c) => c.projectId === id),

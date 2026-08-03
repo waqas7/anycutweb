@@ -3,11 +3,14 @@ import { createId } from '../types'
 
 const STORAGE_KEY = 'anycut-web-v1'
 
+/** Stable empty snapshot for SSR / getServerSnapshot (must be referentially equal). */
+const SERVER_SNAPSHOT: AppData = { projects: [], cutItems: [], stockSheets: [] }
+
 function emptyData(): AppData {
   return { projects: [], cutItems: [], stockSheets: [] }
 }
 
-function load(): AppData {
+function readFromStorage(): AppData {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (!raw) return emptyData()
@@ -22,7 +25,29 @@ function load(): AppData {
   }
 }
 
+/** In-memory snapshot — same reference until a mutation calls save(). */
+let cached: AppData | null = null
+
+function ensureCached(): AppData {
+  if (!cached) cached = readFromStorage()
+  return cached
+}
+
+/**
+ * Working copy for mutators. Always a new object so in-place edits
+ * do not mutate the published getSnapshot() reference.
+ */
+function load(): AppData {
+  const snap = ensureCached()
+  return {
+    projects: [...snap.projects],
+    cutItems: [...snap.cutItems],
+    stockSheets: [...snap.stockSheets],
+  }
+}
+
 function save(data: AppData) {
+  cached = data
   localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
 }
 
@@ -38,8 +63,13 @@ export function subscribe(listener: Listener): () => void {
   return () => listeners.delete(listener)
 }
 
+/** Must return the same reference until data changes (React useSyncExternalStore). */
 export function getSnapshot(): AppData {
-  return load()
+  return ensureCached()
+}
+
+export function getServerSnapshot(): AppData {
+  return SERVER_SNAPSHOT
 }
 
 export function createProject(name: string, notes = ''): Project {
@@ -93,15 +123,15 @@ export function deleteProject(id: string) {
 }
 
 export function getProject(id: string): Project | undefined {
-  return load().projects.find((p) => p.id === id)
+  return ensureCached().projects.find((p) => p.id === id)
 }
 
 export function getCutItems(projectId: string): CutItem[] {
-  return load().cutItems.filter((c) => c.projectId === projectId)
+  return ensureCached().cutItems.filter((c) => c.projectId === projectId)
 }
 
 export function getStockSheets(projectId: string): StockSheet[] {
-  return load().stockSheets.filter((s) => s.projectId === projectId)
+  return ensureCached().stockSheets.filter((s) => s.projectId === projectId)
 }
 
 export function upsertCutItem(item: CutItem) {

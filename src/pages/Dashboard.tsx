@@ -4,7 +4,7 @@ import * as store from '../storage/store'
 
 export function Dashboard() {
   const navigate = useNavigate()
-  const data = useSyncExternalStore(store.subscribe, store.getSnapshot)
+  const data = useSyncExternalStore(store.subscribe, store.getSnapshot, store.getServerSnapshot)
   const [name, setName] = useState('')
   const [showForm, setShowForm] = useState(false)
 
