@@ -523,6 +523,109 @@ th {
   opacity: 0.5;
 }
 
+.bom-list {
+  margin: 0.5rem 0 0;
+  padding-left: 1.1rem;
+}
+
+.bom-list li {
+  margin-bottom: 0.35rem;
+}
+
+.muted {
+  color: var(--ink-muted);
+  font-weight: 400;
+}
+
+.template-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 0.65rem;
+  margin-bottom: 1rem;
+}
+
+.template-card {
+  text-align: left;
+  border: 1px solid color-mix(in srgb, var(--line) 55%, transparent);
+  background: var(--surface);
+  border-radius: 6px;
+  padding: 0.75rem 0.85rem;
+  cursor: pointer;
+  display: grid;
+  gap: 0.35rem;
+  color: inherit;
+}
+
+.template-card:hover {
+  border-color: var(--walnut);
+}
+
+.template-card.is-active {
+  border-color: var(--walnut);
+  box-shadow: var(--shadow);
+  background: color-mix(in srgb, var(--sawdust) 50%, white);
+}
+
+.template-card__title {
+  font-weight: 650;
+  font-family: var(--font-display);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.template-card__desc {
+  font-size: 0.82rem;
+  color: var(--ink-muted);
+  line-height: 1.35;
+}
+
+.badge-premium {
+  font-family: var(--font-body);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: color-mix(in srgb, var(--amber) 18%, white);
+  color: var(--amber);
+  border: 1px solid color-mix(in srgb, var(--amber) 40%, transparent);
+  border-radius: 3px;
+  padding: 0.12rem 0.35rem;
+}
+
+.edge-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--ink-muted);
+  margin-right: 0.25rem;
+}
+
+.logo-preview-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.logo-preview {
+  max-height: 64px;
+  max-width: 160px;
+  object-fit: contain;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: #fff;
+  padding: 4px;
+}
+
+.saved-flash {
+  color: var(--walnut);
+  font-size: 0.85rem;
+  font-weight: 600;
+  align-self: center;
+  margin-right: auto;
+}
+
 @media print {
   .breadcrumbs,
   .header-actions,

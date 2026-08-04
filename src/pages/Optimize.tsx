@@ -4,6 +4,10 @@ import * as store from '../storage/store'
 import { optimize, type OptimizationResult } from '../domain/optimizer'
 import { LayoutPreview } from '../components/LayoutPreview'
 import { downloadText, exportLayoutCsv, exportLayoutPdf } from '../export/io'
+import { computeBandingBom, bandingTotalMm } from '../domain/banding'
+import { computeJobCost, formatMoney } from '../domain/costCalculator'
+import { extractOffcuts } from '../domain/offcuts'
+import { formatDim, fromMm } from '../domain/units'
 
 export function OptimizePage() {
   const { id = '' } = useParams()
@@ -17,11 +21,26 @@ export function OptimizePage() {
     () => data.stockSheets.filter((s) => s.projectId === id),
     [data.stockSheets, id],
   )
+  const shop = data.shopProfile
 
   const [result, setResult] = useState<OptimizationResult | null>(null)
   const [error, setError] = useState('')
   const [highlight, setHighlight] = useState<string | null>(null)
   const [sheetIndex, setSheetIndex] = useState(0)
+
+  const banding = useMemo(() => computeBandingBom(items), [items])
+  const offcuts = useMemo(() => (result ? extractOffcuts(result) : []), [result])
+  const cost = useMemo(() => {
+    if (!project) return null
+    return computeJobCost(
+      result,
+      stock,
+      project,
+      project.unit,
+      bandingTotalMm(items),
+      items.reduce((s, i) => s + i.quantity, 0),
+    )
+  }, [result, stock, project, items])
 
   if (!project) {
     return (
@@ -93,7 +112,7 @@ export function OptimizePage() {
               <button
                 type="button"
                 className="btn btn-ghost"
-                onClick={() => exportLayoutPdf(project, result, unit)}
+                onClick={() => exportLayoutPdf(project, result, unit, shop, banding)}
               >
                 PDF
               </button>
@@ -130,6 +149,52 @@ export function OptimizePage() {
             <Stat label="Waste" value={`${result.overallWastePercent.toFixed(1)}%`} />
           </div>
 
+          {cost?.hasAnyRate && (
+            <div className="panel">
+              <h2>Job cost</h2>
+              <ul className="bom-list">
+                {cost.sheetLines.map((line) => (
+                  <li key={line.stockLabel + line.materialType}>
+                    {line.sheetsUsed}× {line.stockLabel} @{' '}
+                    {formatMoney(line.pricePerSheet, cost.currencySymbol)} ={' '}
+                    {formatMoney(line.lineTotal, cost.currencySymbol)}
+                  </li>
+                ))}
+                {cost.bandingCost > 0 && (
+                  <li>
+                    Banding {formatDim(cost.bandingTotalMm, unit)} ×{' '}
+                    {formatMoney(cost.bandingPricePerUnit, cost.currencySymbol)}/
+                    {unit} = {formatMoney(cost.bandingCost, cost.currencySymbol)}
+                    <span className="muted">
+                      {' '}
+                      ({fromMm(cost.bandingTotalMm, unit).toFixed(2)} {unit})
+                    </span>
+                  </li>
+                )}
+                <li>
+                  <strong>Total {formatMoney(cost.total, cost.currencySymbol)}</strong>
+                </li>
+              </ul>
+            </div>
+          )}
+
+          {banding.length > 0 && (
+            <div className="panel">
+              <h2>Edge banding</h2>
+              <p>
+                Total <strong>{formatDim(bandingTotalMm(items), unit)}</strong>
+              </p>
+              <ul className="bom-list">
+                {banding.map((line) => (
+                  <li key={`${line.materialType}-${line.segmentLengthMm}`}>
+                    {line.materialType} · {formatDim(line.segmentLengthMm, unit)} ×{' '}
+                    {line.segmentCount} = {formatDim(line.totalLengthMm, unit)}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           {result.unplaced.length > 0 && (
             <div className="panel warn">
               <strong>Unplaced ({result.unplaced.length})</strong>
@@ -162,6 +227,83 @@ export function OptimizePage() {
                 </div>
               )}
             </>
+          )}
+
+          {offcuts.length > 0 && (
+            <div className="panel">
+              <div className="section-head">
+                <h2>Usable offcuts</h2>
+                <button
+                  type="button"
+                  className="btn btn-ghost btn-sm"
+                  onClick={() => {
+                    for (const o of offcuts.slice(0, 12)) {
+                      store.addOffcut({
+                        label: '',
+                        notes: '',
+                        lengthMm: o.lengthMm,
+                        widthMm: o.widthMm,
+                        materialType: o.materialType,
+                        sourceProjectId: project.id,
+                        sourceProjectName: project.name,
+                        fromSheetIndex: o.fromSheetIndex,
+                      })
+                    }
+                    alert(`Saved ${Math.min(12, offcuts.length)} offcut(s) to library`)
+                  }}
+                >
+                  Save all to library
+                </button>
+              </div>
+              <div className="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Size</th>
+                      <th>Material</th>
+                      <th>Sheet</th>
+                      <th />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {offcuts.slice(0, 12).map((o, i) => (
+                      <tr key={`${o.fromSheetIndex}-${o.lengthMm}-${o.widthMm}-${i}`}>
+                        <td>
+                          {formatDim(o.lengthMm, unit)} × {formatDim(o.widthMm, unit)}
+                        </td>
+                        <td>{o.materialType}</td>
+                        <td>
+                          #{o.fromSheetIndex} {o.stockLabel}
+                        </td>
+                        <td className="row-actions">
+                          <button
+                            type="button"
+                            className="btn btn-ghost btn-sm"
+                            onClick={() => {
+                              store.addOffcut({
+                                label: '',
+                                notes: '',
+                                lengthMm: o.lengthMm,
+                                widthMm: o.widthMm,
+                                materialType: o.materialType,
+                                sourceProjectId: project.id,
+                                sourceProjectName: project.name,
+                                fromSheetIndex: o.fromSheetIndex,
+                              })
+                            }}
+                          >
+                            Save
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <p className="algo-note">
+                <Link to="/offcuts">Open offcut library</Link>
+              </p>
+            </div>
           )}
 
           <p className="algo-note">Algorithm: {result.algorithmUsed}</p>

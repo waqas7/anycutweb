@@ -26,9 +26,20 @@ export function Dashboard() {
             Nest parts on stock sheets, track kerf, export CSV & PDF — all in the browser.
           </p>
         </div>
-        <button type="button" className="btn btn-primary" onClick={() => setShowForm(true)}>
-          New project
-        </button>
+        <div className="header-actions">
+          <Link className="btn btn-ghost" to="/shop">
+            Shop profile
+          </Link>
+          <Link className="btn btn-ghost" to="/offcuts">
+            Offcuts
+          </Link>
+          <Link className="btn btn-ghost" to="/settings">
+            Settings
+          </Link>
+          <button type="button" className="btn btn-primary" onClick={() => setShowForm(true)}>
+            New project
+          </button>
+        </div>
       </header>
 
       {showForm && (
